@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Italian Meal Finder</title>
+    <style>
+      body {
+        font-family: 'Helvetica', sans-serif;
+      }
+
+      .container {
+        width: 450px;
+        border: 1px solid grey;
+        margin: 50px auto;
+        padding: 20px;
+      }
+
+      .search-input {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+        border: 1px solid grey;
+        padding: 10px;
+      }
+
+      .search-input-container {
+        position: relative;
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 5px;
+      }
+
+      input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        margin-right: 10px;
+      }
+
+      input[type="checkbox"]:before {
+        content: "";
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 1px solid grey;
+        cursor: pointer;
+      }
+
+      input[type="checkbox"]:checked:before {
+        content: "✔";
+        font-size: 16px;
+        color: #0E894A;
+        text-align: center;
+      }
+
+      .categories-list {
+        padding: 0;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      ul li {
+        margin-bottom: 10px;
+      }
+
+      .error-message {
+        color: red;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+
+      .no-results-message {
+        color: red;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+
+      .reset-input {
+        position: absolute;
+        right: 10px;
+        top: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .hide {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/babel-standalone@6/babel.js"></script>
+
+    <script type="text/babel">
+      class Categories extends React.Component {
+        constructor(props) {
+          super(props);
+          this.state = {
+            categories: [],
+            selectedCategories: [],
+            searchResults: [],
+            filter: "",
+            query: "",
+            showError: false,
+          };
+        }
+
+        componentDidMount() {
+          this.fetchCategories();
+        }
+
+        fetchCategories() {
+          fetch("https://www.includecore.com/api/projects/4867/databases/7367-Categories?order=oldest")
+            .then((response) => response.json())
+            .then((parsedResponse) =>
+              this.setState(
+                {
+                  categories: parsedResponse.data,
+                  selectedCategories: parsedResponse.data,
+                },
+                () => this.searchMeals()
+              )
+            )
+            .catch((error) =>
+              console.error("Error fetching categories:", error)
+            );
+        }
+
+        searchMeals = () => {
+          const { selectedCategories, query } = this.state;
+
+          if (selectedCategories.length === 0) {
+            this.setState({ showError: true, searchResults: [] });
+            return;
+          } else {
+            this.setState({ showError: false });
+          }
+
+          const filter = JSON.stringify([
+            {
+              field: "category",
+              operator: "in",
+              value: selectedCategories.map((category) => category.id),
+            },
+          ]);
+          fetch(
+            `https://www.includecore.com/api/projects/4867/databases/7368-Meals?q=${query}&filter=${filter}`
+          )
+            .then((response) => response.json())
+            .then((parsedResponse) =>
+              this.setState({ searchResults: parsedResponse.data, filter })
+            )
+            .catch((error) => console.error("Error fetching meals:", error));
+        };
+
+        handleInputChange = (event) => {
+          const query = event.target.value;
+          this.setState({ query }, () => this.searchMeals());
+        };
+
+        toggleCategorySelection = (category) => {
+          const { selectedCategories } = this.state;
+          const index = selectedCategories.indexOf(category);
+          if (index === -1) {
+            this.setState(
+              { selectedCategories: [...selectedCategories, category] },
+              () => {
+                this.searchMeals();
+              }
+            );
+          } else {
+            this.setState(
+              {
+                selectedCategories: selectedCategories.filter(
+                  (cat) => cat !== category
+                ),
+              },
+              () => {
+                this.searchMeals();
+              }
+            );
+          }
+        };
+
+        clearInput = () => {
+            this.setState({query: ''}, () => this.searchMeals());
+            if (this.searchInput) {
+                this.searchInput.value = '';
+            }
+        };
+
+        render() {
+          const { categories, selectedCategories, searchResults, showError, query } = this.state;
+          return (
+            <div className="container">
+              <h1>Italian Meals Finder 🍕🍝🇮🇹</h1>
+              <div className="search-input-container">
+                <input
+                  ref={(input) => (this.searchInput = input)}
+                  className="search-input"
+                  type="text"
+                  placeholder="Search our yummy database of Italian foods!"
+                  onInput={this.handleInputChange}
+                />
+                <button className="reset-input" onClick={this.clearInput}>
+                  &#215;
+                </button>
+              </div>
+              <ul className="categories-list">
+                {categories.map((category) => (
+                  <li key={category.id}>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={() => this.toggleCategorySelection(category)}
+                      />
+                      {category.name}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <hr />
+              {showError && (
+                <p className="error-message">Please select at least one category!</p>
+              )}
+              <div className={!showError ? "" : "hide"}>
+                {searchResults.length > 0 && (
+                  <div>
+                    <h4>{query.trim() === "" ? "Recently added dishes" : "Search Results"}</h4>
+                    <ul>
+                      {
+                        searchResults
+                          .slice()
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((result) => (
+                            <li key={result.id}>{result.name}</li>
+                          ))
+                      }
+                    </ul>
+                  </div>
+                )}
+                {searchResults.length === 0 && (
+                  <p className="no-results-message">{query.trim() === "" ? "" : "No results found."}</p>
+                )}
+              </div>
+            </div>
+          );
+        }
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<Categories />);
+    </script>
+  </body>
+</html>
