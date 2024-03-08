@@ -246,16 +246,22 @@
                 {searchResults.length > 0 && (
                   <div>
                     <h4>{query.trim() === "" ? "Recently added dishes" : "Search Results"}</h4>
-                    <ul>
-                      {
-                        searchResults
+                    {query.trim() === "" ? (
+                      <ul>
+                        {searchResults.map((result) => (
+                          <li key={result.id}>{result.name}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <ul>
+                        {searchResults
                           .slice()
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((result) => (
                             <li key={result.id}>{result.name}</li>
-                          ))
-                      }
-                    </ul>
+                          ))}
+                      </ul>
+                    )}
                   </div>
                 )}
                 {searchResults.length === 0 && (
