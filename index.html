@@ -248,18 +248,18 @@
                     <h4>{query.trim() === "" ? "Recently added dishes" : "Search Results"}</h4>
                     {query.trim() === "" ? (
                       <ul>
-                        {searchResults.map((result) => (
-                          <li key={result.id}>{result.name}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <ul>
                         {searchResults
                           .slice()
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((result) => (
                             <li key={result.id}>{result.name}</li>
                           ))}
+                      </ul>
+                    ) : (
+                      <ul>
+                        {searchResults.map((result) => (
+                          <li key={result.id}>{result.name}</li>
+                        ))}
                       </ul>
                     )}
                   </div>
